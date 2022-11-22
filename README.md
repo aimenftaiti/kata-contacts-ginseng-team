@@ -85,3 +85,8 @@ CREATE UNIQUE INDEX index_contacts_email ON contacts(email);
 ```
 
 Make a graph for the new result. Does it match what you would expect ?
+
+# Result
+
+![SELECT query time (in seconds) as a function of database size (log scale) graph](Performance-test-result.png)
+We see that the time complexity is roughly O(n) without an index, while adding an index makes that constant time
