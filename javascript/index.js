@@ -35,13 +35,19 @@ const migrate = async (db) => {
 const insertContacts = async (db) => {
   console.log('Inserting contacts ...')
 
+  const start = Date.now()
+
   const preparedStatement = await db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)')
   for (const contact of generateContacts(numContacts)) {
     await preparedStatement.run(contact[0], contact[1])
   }
   await preparedStatement.finalize()
 
+  const end = Date.now()
+  const elapsed = (end - start) / 1000
+
   console.log('Inserted contacts')
+  console.log(`Query took ${elapsed} seconds`)
 }
 
 const queryContact = async (db) => {
