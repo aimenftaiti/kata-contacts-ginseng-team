@@ -30,6 +30,7 @@ const migrate = async (db) => {
           email TEXT NOT NULL
          )
      `)
+  await db.exec('CREATE UNIQUE INDEX index_contacts_email ON contacts(email);')
   console.log('Done migrating db')
 }
 
@@ -67,14 +68,16 @@ const insertContacts = async (db) => {
 
 const queryContact = async (db) => {
   const start = Date.now()
+
   const res = await db.get('SELECT name FROM contacts WHERE email = ?', [`email-${numContacts}@domain.tld`])
   if (!res || !res.name) {
     console.error('Contact not found')
     process.exit(1)
   }
+
   const end = Date.now()
   const elapsed = (end - start) / 1000
-  console.log(`Query took ${elapsed} seconds`)
+  console.log(`Selection query took ${elapsed} seconds`)
 }
 
 (async () => {
@@ -85,6 +88,7 @@ const queryContact = async (db) => {
   if (shouldMigrate) {
     await migrate(db)
   }
+  await db.run('DELETE FROM contacts')
   await insertContacts(db)
   await queryContact(db)
   await db.close()
