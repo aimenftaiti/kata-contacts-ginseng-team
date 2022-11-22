@@ -35,10 +35,11 @@ const migrate = async (db) => {
 const insertContacts = async (db) => {
   console.log('Inserting contacts ...')
 
-  const preparedStatement = db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)');
-  for (const contact of generateContacts(numContacts)){
-    preparedStatement.run(contact)
+  const preparedStatement = await db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)')
+  for (const contact of generateContacts(numContacts)) {
+    await preparedStatement.run(contact[0], contact[1])
   }
+  await preparedStatement.finalize()
 
   console.log('Inserted contacts')
 }
