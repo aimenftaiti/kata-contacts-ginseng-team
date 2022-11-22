@@ -4,6 +4,7 @@ const fs = require('fs')
 
 const filename = 'contacts.sqlite3'
 const numContacts = Number.parseInt(process.argv.slice(2)[0]) // Get the first argument from CLI ; assume the user gives a correct value
+const blockSize = Number.parseInt(process.argv.slice(2)[1]) // Get the second argument from CLI ; assume the user gives a correct value
 
 const shouldMigrate = !fs.existsSync(filename)
 
@@ -15,7 +16,7 @@ const shouldMigrate = !fs.existsSync(filename)
 function * generateContacts (numContacts) {
   let i = 1
   while (i <= numContacts) {
-    yield [`name-${i}`, `email-${i}@domain.tld`]
+    yield { name: `name-${i}`, email: `email-${i}@domain.tld` }
     i++
   }
 }
@@ -37,17 +38,31 @@ const insertContacts = async (db) => {
 
   const start = Date.now()
 
-  const preparedStatement = await db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)')
-  for (const contact of generateContacts(numContacts)) {
-    await preparedStatement.run(contact[0], contact[1])
+  const generator = generateContacts(numContacts)
+  let exit = false
+  while (!exit) {
+    const preparedStatement = await db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)')
+    await db.run('begin transaction')
+
+    for (let i = 0; i < blockSize; i++) {
+      const next = generator.next()
+      if (next.done) {
+        exit = true
+        break
+      }
+      const contact = generator.next().value
+      preparedStatement.run(contact.name, contact.email)
+    }
+
+    await preparedStatement.finalize()
+    await db.run('commit')
   }
-  await preparedStatement.finalize()
 
   const end = Date.now()
   const elapsed = (end - start) / 1000
 
   console.log('Inserted contacts')
-  console.log(`Query took ${elapsed} seconds`)
+  console.log(`Insertion took ${elapsed} seconds`)
 }
 
 const queryContact = async (db) => {
