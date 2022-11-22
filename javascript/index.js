@@ -3,7 +3,7 @@ const open = require('sqlite').open
 const fs = require('fs')
 
 const filename = 'contacts.sqlite3'
-const numContacts = 3 // TODO: read from process.argv
+const numContacts = Number.parseInt(process.argv.slice(2)[0]) // Get the first argument from CLI ; assume the user gives a correct value
 
 const shouldMigrate = !fs.existsSync(filename)
 
@@ -12,11 +12,12 @@ const shouldMigrate = !fs.existsSync(filename)
  * one at a time
  *
  */
-function * generateContacts () {
- // TODO
-  yield [`name-1`, `email-1@domain.tld`]
-  yield [`name-2`, `email-2@domain.tld`]
-  yield [`name-3`, `email-3@domain.tld`]
+function * generateContacts (numContacts) {
+  let i = 1
+  while (i <= numContacts) {
+    yield [`name-${i}`, `email-${i}@domain.tld`]
+    i++
+  }
 }
 
 const migrate = async (db) => {
@@ -33,7 +34,13 @@ const migrate = async (db) => {
 
 const insertContacts = async (db) => {
   console.log('Inserting contacts ...')
-  // TODO
+
+  const preparedStatement = db.prepare('INSERT INTO contacts (name, email) VALUES (?, ?)');
+  for (const contact of generateContacts(numContacts)){
+    preparedStatement.run(contact)
+  }
+
+  console.log('Inserted contacts')
 }
 
 const queryContact = async (db) => {
